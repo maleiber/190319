@@ -45,7 +45,7 @@ class draw_pic(object):
                     a[k].append(i.get_by_attr(k))
             for k in a:
                 sc = plt.scatter(b, a[k], c=z, vmin=v_min, vmax=v_max, s=35, cmap=cm)
-                z=[x-16 for x in z]
+                #z=[x-16 for x in z]
         else:
             sc = plt.scatter(b, a, c=z, vmin=v_min, vmax=v_max, s=35, cmap=cm)
         if draw_line==True:

@@ -260,7 +260,7 @@ class segment_mode(object):
         y=self.data_sign[new_p[-1]]-self.data_sign[new_p[0]]
         return (x,y)
         pass
-    def slide_cos_search(self):
+    def slide_cos_search(self,draw=False):
         
         #get all sub
         w=self.min_len
@@ -290,7 +290,7 @@ class segment_mode(object):
                 if s2!=s1:
                     sub1=self.data_sign[s1:e1]
                     sub2=self.data_sign[s2:e2]
-                    value=new_cos(sub1,sub2)
+                    value=L2_distance(sub1,sub2)
                     #range is(-1,1)
                     #closer to one ,more similar
                     #self.sub_cos[(s1,e1,s2,e2)]=value
@@ -380,9 +380,32 @@ class segment_mode(object):
         #print('x_array',y_array,'len',len(y_array))
         outputname='rou_theta_'
         outputname=outputname+self.name
-        draw_pic.draw_pic( y_array,t_array,x_array,False,save_name=outputname)
+        if draw==True:
+            draw_pic.draw_pic( y_array,t_array,x_array,False,save_name=outputname)
         pass
-    
+    def get_mid_d(self):
+        value_seq=[]
+        
+        for k1 in self.sub_cos:
+            sub_dict=self.sub_cos[k1]
+            for k2 in sub_dict:
+                value_seq.append(sub_dict[k2])
+        t=0.5*len(value_seq)
+        t=round(t)
+        t=max(t,1)
+        value_seq.sort()
+        
+        #print('value seq:', value_seq)
+        #print('t=',t)
+        return value_seq[t]
+    def get_var_d(self):
+        value_seq=[]
+        
+        for k1 in self.sub_cos:
+            sub_dict=self.sub_cos[k1]
+            for k2 in sub_dict:
+                value_seq.append(sub_dict[k2])
+        return numpy.var(value_seq)
     def __count_dc_of_cos_dict(self):
         value_seq=[]
         
@@ -391,7 +414,7 @@ class segment_mode(object):
             sub_dict=self.sub_cos[k1]
             for k2 in sub_dict:
                 value_seq.append(sub_dict[k2])
-        t=0.005*len(value_seq)
+        t=self.dc_factor*len(value_seq)
         t=round(t)
         t=max(t,1)
         value_seq.sort()
@@ -484,15 +507,15 @@ class segment_mode(object):
         return self.pattern_symbol
         pass
     
-    def density_clu(self):
-        #self.data_rou_theta[i]=[(s1,e1),rou,theta,gamma]
+    def density_clu(self,draw=False):
+        #self.data_rou_theta[i]=[(s1,e1),rou,delta,gamma]
         self.data_rou_theta=sorted(self.data_rou_theta,key=lambda x:x[3],reverse=True)
         clu_center=[]
         #clu_center record inner
         out_center=[]
         #out record outer
-        inner_clu_threshold=2
-        outer_clu_threshold=1.2
+        inner_clu_threshold=1
+        outer_clu_threshold=8
         if_partition={}
         for key in self.sub_cos:
             s1,e1=key
@@ -500,8 +523,10 @@ class segment_mode(object):
                 if_partition[i]=False
         #max_e=len(if_partition)-1
         #record inner
+        self.min_delta=999
         for pair in self.data_rou_theta:
             if pair[3]>=inner_clu_threshold:
+                self.min_delta=min(pair[2],self.min_delta)
                 s1,e1=pair[0]
                 s1e1_done=False
                 now_center=(s1,e1)
@@ -636,7 +661,8 @@ class segment_mode(object):
         clu_array=[nowcolor*2 if x==max_clu else x for x in clu_array]
         outputname='frequent_sequence_'
         outputname=outputname+self.name
-        draw_pic.draw_pic( y_array,clu_array,x_array,save_name=outputname,title=self.name,text_data=loc_mark,y_is_multi=True)
+        if draw==True:
+            draw_pic.draw_pic( y_array,clu_array,x_array,save_name=outputname,title=self.name,text_data=loc_mark,y_is_multi=True)
         
         
         #print ('outter cluster num:',len(self.outer_clu))
@@ -667,7 +693,8 @@ class segment_mode(object):
         clu_array=[nowcolor*2 if x==max_clu else x for x in clu_array]
         outputname='rare_sequence_'
         outputname=outputname+self.name
-        draw_pic.draw_pic( y_array,clu_array,x_array,save_name=outputname,title=self.name,text_data=loc_mark,y_is_multi=True)
+        if draw==True:
+            draw_pic.draw_pic( y_array,clu_array,x_array,save_name=outputname,title=self.name,text_data=loc_mark,y_is_multi=True)
         pass
     pass
 
@@ -792,12 +819,34 @@ if __name__=='__main__':
                     ['co',     'no2',      'so2',      'o3',      'pm10',      'pm25']))
             i=i+1
         
-        co_seg=segment_mode(6,48, multi_dimen_seg,'co')
-        co_seg.slide_cos_search()
-        co_seg.density_clu()
+        co_seg=segment_mode(7,8, multi_dimen_seg,'co')
+        
+        #finding best dc
+        co_seg.dc_factor=0.01
+        step=0.001
+        best_score=0
+        best_dc=0
+        best_co_seg=0
+        for i in range(10):
+            co_seg.slide_cos_search()
+            co_seg.density_clu()
+            score=len(co_seg.inner_clu)*co_seg.min_delta**2
+            if score>best_score:
+                best_score=score
+                best_co_seg=co_seg
+                best_dc=co_seg.dc_factor
+            print ('min delta',co_seg.min_delta**2,'now score:',score)
+            co_seg.dc_factor=co_seg.dc_factor+step
+            
+        co_seg=best_co_seg    
+        co_seg.dc_factor=best_dc
+        co_seg.slide_cos_search(True)
+        co_seg.density_clu(True)
         co_sequence=co_seg.build_pattern_of_symbol('co')
 #        print (co_sequence)
     print (time.time(),'interval:',time.time()-start)
+    
+    '''
     ftree=FP_tree(2,0.4,4)
     ftree.add_sequence(co_sequence)
     ftree.structure_sub_tree()
@@ -813,7 +862,10 @@ if __name__=='__main__':
         if i>10:
             break
         i=i+1
-        '''no2_list=site.no2list
+    '''
+    pass
+    '''
+        no2_list=site.no2list
         no2_seg=segment_mode(70,100,no2_list,'no2')
         no2_seg.slide_cos_search()
         no2_seg.density_clu()

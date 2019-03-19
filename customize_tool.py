@@ -29,7 +29,15 @@ def cos(vector1,vector2):
         return 0
     else:  
         return dot_product / ((normA*normB)**0.5)  
-
+def L2_distance(vector1,vector2):
+    length=0
+    
+    for i in range(len(vector1)):
+        key_list=vector1[i].get_attr()
+        for k in key_list:
+            length=length+(vector1[i].get_by_attr(k)-vector2[i].get_by_attr(k))**2
+        
+    return math.sqrt(length)
 def new_cos(vector1,vector2):  
     #vector is a array of i,
     #   and each of the i is dict
@@ -47,4 +55,6 @@ def new_cos(vector1,vector2):
     return cos_sum
     
 if __name__=='__main__':
-    print (new_cos([{1:1,2:2},{1:2,2:3},{1:3,2:4}],[{1:1,2:2},{1:2,2:13},{1:3,2:74}]) )
+    #print (new_cos([{1:1,2:2},{1:2,2:3},{1:3,2:4}],[{1:1,2:2},{1:2,2:13},{1:3,2:74}]) )
+    #print (L2_distance([1,2],[2,3]))
+    print (cos([1,1,2,2,4],[1,1,9,28,7]))
