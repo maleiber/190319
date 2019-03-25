@@ -264,6 +264,7 @@ class segment_mode(object):
         
         #get all sub
         w=self.min_len
+        #attention that w =1 ,would not use the min_len
         w=1
         for i in range(len(self.data_sign)):
             start=i
@@ -290,7 +291,8 @@ class segment_mode(object):
                 if s2!=s1:
                     sub1=self.data_sign[s1:e1]
                     sub2=self.data_sign[s2:e2]
-                    value=L2_distance(sub1,sub2)
+                    #value=L2_distance(sub1,sub2)
+                    value=new_cos(sub1,sub2)
                     #range is(-1,1)
                     #closer to one ,more similar
                     #self.sub_cos[(s1,e1,s2,e2)]=value
@@ -719,7 +721,7 @@ def show_rules_in_segment_mode(seg_dict,rule,rulenum,width=20):
         loc_data=[]
         name=k[0]
         start_name[name]=1
-        temp_color=t_array_dict[name]
+        temp_color=[120 for i in t_array_dict[name]]
         y_pos=max(seg_dict[name])
         key_list=y_pos.get_attr()
         y_pos=max([y_pos.get_by_attr(k) for k in key_list])
@@ -731,14 +733,14 @@ def show_rules_in_segment_mode(seg_dict,rule,rulenum,width=20):
             loc_data.append([(i,y_pos),str(believe)])
             
             for j in range(0,width):
-                temp_color[i+j]=believe
+                temp_color[min(i+j,len(temp_color)-1)]=int(believe)
         t_array_dict[name]=temp_color    
         loc_dict[name]=loc_data
     for k in end_array:
         loc_data=[]
         name=k[0]
         end_name[name]=1
-        temp_color=t_array_dict[name]
+        temp_color=[120 for i in t_array_dict[name]]
         y_pos=max(seg_dict[name])
         key_list=y_pos.get_attr()
         y_pos=max([y_pos.get_by_attr(k) for k in key_list])
@@ -746,7 +748,7 @@ def show_rules_in_segment_mode(seg_dict,rule,rulenum,width=20):
         for i in k[1:]:
             loc_data.append([(i,y_pos),str(believe)])
             for j in range(0,width):
-                temp_color[i+j]=believe
+                temp_color[min(i+j,len(temp_color)-1)]=int(believe)
         t_array_dict[name]=temp_color
         loc_dict[name]=loc_data
         
@@ -764,8 +766,10 @@ def show_rules_in_segment_mode(seg_dict,rule,rulenum,width=20):
         elif name in end_name:
             temp_title='end: '+ name
         if name in loc_dict:
+            print (t_array)
             draw_pic.draw_pic( y_array,t_array,x_array,save_name=outputname,title=temp_title,text_data=loc_dict[name],y_is_multi=True)
         else:
+            print (t_array)
             draw_pic.draw_pic( y_array,t_array,x_array,save_name=outputname,title=temp_title,y_is_multi=True)
         
         
@@ -822,12 +826,12 @@ if __name__=='__main__':
         co_seg=segment_mode(7,8, multi_dimen_seg,'co')
         
         #finding best dc
-        co_seg.dc_factor=0.01
+        co_seg.dc_factor=0.013
         step=0.001
         best_score=0
         best_dc=0
         best_co_seg=0
-        for i in range(10):
+        for i in range(1):
             co_seg.slide_cos_search()
             co_seg.density_clu()
             score=len(co_seg.inner_clu)*co_seg.min_delta**2
@@ -846,8 +850,8 @@ if __name__=='__main__':
 #        print (co_sequence)
     print (time.time(),'interval:',time.time()-start)
     
-    '''
-    ftree=FP_tree(2,0.4,4)
+    
+    ftree=FP_tree(0.01,0.3,2,8)
     ftree.add_sequence(co_sequence)
     ftree.structure_sub_tree()
     ftree.get_associate_rule()
@@ -862,7 +866,7 @@ if __name__=='__main__':
         if i>10:
             break
         i=i+1
-    '''
+    
     pass
     '''
         no2_list=site.no2list

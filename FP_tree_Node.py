@@ -24,7 +24,7 @@ class FT_tree_Node(object):
         self.this_node_time=now
         pass
     def show(self,index=1):
-        print(' '*index,self.name,' ,[',self.key,'] this:[',self.this_node_time,'] len:',self.count)
+        print(' '*index,self.name,' ,[',self.this_node_time,'] len:',self.count)
         for child in self.child.values():
             child.show(index+1)
     pass
