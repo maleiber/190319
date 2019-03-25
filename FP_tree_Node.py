@@ -19,6 +19,8 @@ class FT_tree_Node(object):
         self.parent_node_time=parent
         pass
     def set_node_time(self,now):
+        if type(now)==tuple:
+            now=list(now)
         self.this_node_time=now
         pass
     def show(self,index=1):

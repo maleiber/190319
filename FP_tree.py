@@ -8,15 +8,17 @@ from FP_tree_Node import *
 
 class FP_tree(object):
     #optimized for timing sequence
-    def __init__(self,support=2,believe=0.5,window_width=12,max_depth=10):
+    def __init__(self,support=0.1,in_built_confidence=0.3,lift=1,window_width=12,max_depth=10):
         self.support=support
         #support is min time a signnal appear.
         #    if less than it, the node will be prune after builing a tree
-        self.believe=believe
+        self.lift=lift
+        self.build_confidence=in_built_confidence
         self.window=window_width
         self.max_depth=max_depth
-        #believe is min value It think 2 rule have associate
+        #believe is lift
         self.time_seq_data=[]
+        self.sum_seq_num=0
         self.y_array={}
         pass
     def add_y_array(self,name,y_array):
@@ -34,7 +36,13 @@ class FP_tree(object):
 
 #        
         self.time_seq_data.append(raw_seq)
+        self.cal_seq_num()
         pass
+    def cal_seq_num(self):
+        for x in self.time_seq_data:
+            self.sum_seq_num=self.sum_seq_num+len(x)
+        pass
+    
     def init_sub_tree(self):
         self.sub_tree=[]
         self.key2pos_dict={}
@@ -72,7 +80,8 @@ class FP_tree(object):
                     
                     #node_inf=sorted(node_inf,key=lambda x:x[0],reverse=True)
                 self.count_dict.update(seq_dict)
-            node_inf=[(seq_dict[key],key) for key in seq_dict if seq_dict[key]>=self.support]
+            #node_inf=[(seq_dict[key],key) for key in seq_dict if seq_dict[key]>=self.support]
+            node_inf=[(seq_dict[key],key) for key in seq_dict if seq_dict[key]>=1]
             for node_val in node_inf:
                 now_node=FT_tree_Node(name,node_val[1],node_val[0],now_parent)
                 all_position=node_val[1][1:]
@@ -91,7 +100,7 @@ class FP_tree(object):
                 accept_pos={}
                 #form accept time
                 for start in now_origin_time:
-                    for i in range(1,1+self.window):
+                    for i in range(0,1+self.window):
                         accept_pos[start+i]=1
                 accept_pos=[pos for pos in accept_pos]
                 #(2,3,4,5,6,7)
@@ -106,12 +115,12 @@ class FP_tree(object):
                             key_set[pair[1]]=pair[0]
                             #key[position] = belonging tree
                 #chose the key-char not in this tree and reach the support requirement
-                
-                #accept_key=[key for key in key_set if key_set[key]!=now_node.name
-                #                and self.count_dict[key]>=self.support
-                #            ]
-                accept_key=[key for key in key_set if self.count_dict[key]>=self.support
+                #do not let next key and nowkey same
+                accept_key=[key for key in key_set if list(key[1:])!=now_node.this_node_time
+                                and self.count_dict[key]>=1
                             ]
+                #accept_key=[key for key in key_set if self.count_dict[key]>=self.support
+                #            ]
                 #now can use acckey to make new node
                 for alivable_key in accept_key:
                     #c1,b1
@@ -120,10 +129,14 @@ class FP_tree(object):
                     #take intersection y and accept pos as new node's time
                     intersection=[x for x in y_position if x in accept_pos]
                     
-                    if len(intersection)<self.support:
+                    #support condition
+                    #support is a ratio
+                    if len(intersection)/self.sum_seq_num<self.support:
                         #invalid intersection
                         pass
-                    
+                    elif len(intersection)/len(now_origin_time)<self.build_confidence:
+                        #invalid intersection
+                        pass
                     elif now_node.child.get(alivable_key)==None:
                         # new node
                         new_name=alivable_key[0]
@@ -138,10 +151,13 @@ class FP_tree(object):
                         #error
                         #because accept_key is from key in dict. cant be multiple
                         pass
-                
+        
         pass
         
     def expand_sub_tree(self):
+        '''
+        temporary deprecated. use init sub tree only
+        '''
         #expand tree by other tree
         #avoid repeat parent
         #return if add new node this traverse
@@ -196,10 +212,12 @@ class FP_tree(object):
                     #take intersection y and accept pos as new node's time
                     intersection=[x for x in y_position if x in accept_pos]
                     
-                    if len(intersection)<self.support:
+                    if len(intersection)/self.sum_seq_num<self.support:
                         #invalid intersection
                         pass
-                    
+                    elif len(intersection)/len(now_origin_time)<self.build_confidence:
+                        #invalid intersection
+                        pass
                     elif now_node.child.get(alivable_key)==None:
                         if_new=True
                         # new node
@@ -252,10 +270,12 @@ class FP_tree(object):
                 while len(temp_key_array)>0:
                     start_key_array=temp_key_array
                     start_support=count_array.pop()
-                    believe=min(end_support/start_support,start_support/end_support)
+                    lift=end_support/start_support
+                    lift=lift*self.sum_seq_num/len(self.key2pos_dict[end_key_array[0]])
+                    #len(self.key2pos_dict[end_key_array[0]]) is end key appear time
                     s_tuple=tuple(start_key_array)
                     e_tuple=tuple(end_key_array)
-                    self.rule_dict[s_tuple,e_tuple]=believe
+                    self.rule_dict[s_tuple,e_tuple]=lift
                     
                     convert_key=temp_key_array.pop()
                     end_key_array.append(convert_key)
@@ -267,13 +287,14 @@ class FP_tree(object):
             self.rule_list.append((k,self.rule_dict[k]))
         self.rule_list=sorted(self.rule_list,key=lambda x:x[1],reverse=True)
         
-        self.effective_rule=[i for i in self.rule_list if i[1]>=self.believe]
+        self.effective_rule=[i for i in self.rule_list if i[1]>=self.lift]
         print ('all rule size:',len(self.rule_dict))
-#        for k in self.rule_dict:
-#            print (k[0],'=>',k[1],'believe:',self.rule_dict[k])
+        
+        for k in self.rule_dict:
+            print (k[0],'=>',k[1],'lift:',self.rule_dict[k])
         print ('efective rule size:',len(self.effective_rule))
-#        for r in self.effective_rule:
-#            print (r[0][0],'=>',r[0][1],'believe:',r[1])
+        for r in self.effective_rule:
+            print (r[0][0],'=>',r[0][1],'lift:',r[1])
 #        pass
 
     pass
@@ -283,19 +304,21 @@ if __name__=='__main__':
     a=[]
     b=[]
     c=[]
-    a1=('a',1,5,9)
-    a2=('a',2,4)
-    a3=('a',3,5)
-    b1=('b',2,8)
+    a1=('a',1,5,9,13,16)
+    a2=('a',2,5,6)
+    a3=('a',6,10)
+    '''b1=('b',2,8)
     b2=('b',6,10)
     c1=('c',3,9)
     c2=('c',7,11)
     d1=('d',1,4,8,10,12)
-    a=[[1,a1],[2,a2],[3,a3],[4,a2],[5,a1],[9,a1]]
-    b=[[2,b1],[6,b2],[8,b1],[10,b2]]
+    '''
+    a=[[1,a1],[2,a2],[5,a1],[5,a2],[6,a2],[6,a3],[9,a1],[10,a3],[13,a1],[16,a1]]
+    '''b=[[2,b1],[6,b2],[8,b1],[10,b2]]
     c=[[3,c1],[7,c2],[9,c1],[11,c2]]
     d=[[1,d1],[4,d1],[8,d1],[10,d1],[12,d1]]
-    ftree=FP_tree(1,0.5,1)
+    '''
+    ftree=FP_tree(0.1,0.3,2,1)
     ftree.add_sequence(a)
     #ftree.add_sequence(b)
     #ftree.add_sequence(c)
