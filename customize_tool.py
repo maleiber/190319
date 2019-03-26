@@ -49,7 +49,7 @@ def new_cos(vector1,vector2):
         v1=[vector1[i].get_by_attr(k) for k in key_list]
         v2=[vector2[i].get_by_attr(k) for k in key_list]
         value=cos(v1,v2)
-        value=math.exp(value+1)/e_2
+        value=math.exp(value-1)
         value=4*(1-value)
         cos_sum=cos_sum+value
     return cos_sum

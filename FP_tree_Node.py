@@ -23,10 +23,24 @@ class FT_tree_Node(object):
             now=list(now)
         self.this_node_time=now
         pass
+    def __del__(self):
+        '''
+        caution: when delete a node, remember to del all refereneces to this node, especially its parent's,which this func not mentioned
+        use like this:
+            now_node.child.pop(grand_child_key)
+            del child_node
+        '''
+        self.parent=0
+        for child_node_key in self.child:
+            del self.child[child_node_key]
+            self.child.pop(child_node_key)
+        
     def show(self,index=1):
         print(' '*index,self.name,' ,[',self.this_node_time,'] len:',self.count)
         for child in self.child.values():
             child.show(index+1)
+    
+    #there is the pass of whole class FT TREE NODE
     pass
 def get_node_leaf(ft_node,layer=1):
     ret_node=[]

@@ -509,15 +509,15 @@ class segment_mode(object):
         return self.pattern_symbol
         pass
     
-    def density_clu(self,draw=False):
+    def density_clu(self,draw=False,inner=1,outlier=8,mark_outlier=True):
         #self.data_rou_theta[i]=[(s1,e1),rou,delta,gamma]
         self.data_rou_theta=sorted(self.data_rou_theta,key=lambda x:x[3],reverse=True)
         clu_center=[]
         #clu_center record inner
         out_center=[]
         #out record outer
-        inner_clu_threshold=1
-        outer_clu_threshold=8
+        inner_clu_threshold=inner
+        outer_clu_threshold=outlier
         if_partition={}
         for key in self.sub_cos:
             s1,e1=key
@@ -584,48 +584,51 @@ class segment_mode(object):
         for i in if_partition:
             if_partition[i]=False
         
-        #recode outer
-        for pair in self.data_rou_theta:
-            if pair[3]<outer_clu_threshold:
-                s1,e1=pair[0]
-                s1e1_done=False
-                now_center=(s1,e1)
-                now_clu=[]
-                #judge all have distance with center
-                if self.sub_cos.get((s1,e1))==None:
-                    seg1_dict={}
+        if mark_outlier==True:
+            #recode outer
+            for pair in self.data_rou_theta:
+                if pair[3]<outer_clu_threshold:
+                    s1,e1=pair[0]
+                    s1e1_done=False
+                    now_center=(s1,e1)
+                    now_clu=[]
+                    #judge all have distance with center
+                    if self.sub_cos.get((s1,e1))==None:
+                        seg1_dict={}
+                    else:
+                        seg1_dict=self.sub_cos.get((s1,e1))
+                    for i in range(s1,e1):   
+                        if i in if_partition and if_partition[i]==True:
+                            #has been divide
+                            s1e1_done=True
+                            break  
+                    if s1e1_done==True:
+                        continue
+                    for key in seg1_dict:
+                        s2,e2=key
+                        if s2>e1 or s1>e2:
+                            s2e2_done=False
+                            for i in range(s2,e2):   
+                                if i in if_partition and if_partition[i]==True:
+                                    #has been divide
+                                    s2e2_done=True
+                                    break
+                            if s2e2_done==True:
+                                continue
+                            if seg1_dict[key]<=self.dc:
+                                #add to this clu
+                                now_clu.append(key)
+                                for i in range(s2,e2):    
+                                    if_partition[i]=True
+                                for i in range(s1,e1):    
+                                    if_partition[i]=True
+                                #had been divided
+                    if len(now_clu)>1:
+                        out_center.append([now_center,now_clu])
                 else:
-                    seg1_dict=self.sub_cos.get((s1,e1))
-                for i in range(s1,e1):   
-                    if i in if_partition and if_partition[i]==True:
-                        #has been divide
-                        s1e1_done=True
-                        break  
-                if s1e1_done==True:
-                    continue
-                for key in seg1_dict:
-                    s2,e2=key
-                    if s2>e1 or s1>e2:
-                        s2e2_done=False
-                        for i in range(s2,e2):   
-                            if i in if_partition and if_partition[i]==True:
-                                #has been divide
-                                s2e2_done=True
-                                break
-                        if s2e2_done==True:
-                            continue
-                        if seg1_dict[key]<=self.dc:
-                            #add to this clu
-                            now_clu.append(key)
-                            for i in range(s2,e2):    
-                                if_partition[i]=True
-                            for i in range(s1,e1):    
-                                if_partition[i]=True
-                            #had been divided
-                if len(now_clu)>1:
-                    out_center.append([now_center,now_clu])
-            else:
-                pass
+                    pass
+            pass
+        
         self.inner_clu=clu_center 
         self.outer_clu=out_center
         
@@ -695,7 +698,7 @@ class segment_mode(object):
         clu_array=[nowcolor*2 if x==max_clu else x for x in clu_array]
         outputname='rare_sequence_'
         outputname=outputname+self.name
-        if draw==True:
+        if draw==True and mark_outlier==True:
             draw_pic.draw_pic( y_array,clu_array,x_array,save_name=outputname,title=self.name,text_data=loc_mark,y_is_multi=True)
         pass
     pass
@@ -766,13 +769,20 @@ def show_rules_in_segment_mode(seg_dict,rule,rulenum,width=20):
         elif name in end_name:
             temp_title='end: '+ name
         if name in loc_dict:
-            print (t_array)
+            
             draw_pic.draw_pic( y_array,t_array,x_array,save_name=outputname,title=temp_title,text_data=loc_dict[name],y_is_multi=True)
         else:
-            print (t_array)
+            
             draw_pic.draw_pic( y_array,t_array,x_array,save_name=outputname,title=temp_title,y_is_multi=True)
         
         
+    pass
+
+def build_data_from_FPTree(FPTree=[]):
+    '''
+    input:
+        FPTree=[tree1,tree2,tree3,...]
+    '''
     pass
 
 if __name__=='__main__':

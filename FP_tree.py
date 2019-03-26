@@ -254,7 +254,10 @@ class FP_tree(object):
         pass
 
         
-            
+    def show_tree(self):
+        for now_parent_node in self.sub_tree:  
+            now_parent_node.show()
+        pass
     def get_associate_rule(self):
         self.rule_dict={}
         for sub_tree in self.sub_tree:
@@ -296,7 +299,50 @@ class FP_tree(object):
         for r in self.effective_rule:
             print (r[0][0],'=>',r[0][1],'lift:',r[1])
 #        pass
-
+    
+    def trim_tree(self,goal_support=0.1,goal_confidence=0.3,goal_lift=1,max_depth=10):
+        node_list=[]
+        #a queue
+        for now_parent_node in self.sub_tree:
+            node_list.append((now_parent_node,0))
+        
+        while len(node_list)!=0:
+            now_parent_node,deep=node_list.pop(0)
+            #first trim
+            for child_key in list(now_parent_node.child.keys()):
+                now_node=now_parent_node.child[child_key]
+                #next time, now_node as parent node
+                #now_node.this_node_time
+                trim=False
+                for grand_child_key in list(now_node.child.keys()):
+                    child_node=now_node.child[grand_child_key]
+                    #child_node.this_node_time
+                    if child_node.count/self.sum_seq_num<self.support:
+                        trim=True
+                    elif child_node.count/now_node.count<self.build_confidence:
+                        trim=True
+                    elif deep+1>=max_depth:
+                        trim=True
+                    else:
+                        start_support=now_node.count
+                        end_support=child_node.count
+                        lift=end_support/start_support
+                        lift=lift*self.sum_seq_num/len(self.key2pos_dict[child_node.key])
+                        #len(self.key2pos_dict[end_key_array[0]]) is end key appear time
+                        #compare the lift
+                        if lift < goal_lift:
+                            trim=True
+                    if trim== True:
+                        #node.child[grand_child_key]=child_node
+                        #it is unique references
+                        now_node.child.pop(grand_child_key)
+                        del child_node
+                #then add now_node to list if it have grandchild can trim
+                if len(now_node.child)>0 and deep<max_depth:
+                    node_list.append((now_node,deep+1))
+            
+                
+        pass
     pass
 
 
@@ -324,6 +370,9 @@ if __name__=='__main__':
     #ftree.add_sequence(c)
     #ftree.add_sequence(d)
     ftree.structure_sub_tree()
+    ftree.get_associate_rule()
+    ftree.trim_tree(0.1,0.3,2,2)
+    ftree.show_tree()
     ftree.get_associate_rule()
 #    for sub_tree in ftree.sub_tree:
 #        for node in traverse_tree(sub_tree):    

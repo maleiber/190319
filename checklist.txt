@@ -4,9 +4,15 @@
 --------------------------------------
 2.全局密度峰值聚类算法
 2.2FKNN-DPC的密度峰值聚类算法-先算距离，再算
+	re:cannot use it directly, for it is semi-supervised. it needed the preprocessed clustering center as input. the outliers is aslo wanted.
+	先不管增量更新了
+
+______________________________________
 
 (3.局部频繁模式树接入全局DPC)
 3.1将所有局部树的叶子路径算作数据点进行第二次聚类
+3.2完成树的生成后再次修剪算法
+3.3树的叶子节点生成数据点，对所有数据点进行聚类
 
 0.数据寻找
 
