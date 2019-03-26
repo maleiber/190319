@@ -31,9 +31,9 @@ class FT_tree_Node(object):
             del child_node
         '''
         self.parent=0
-        for child_node_key in self.child:
+        for child_node_key in list(self.child.keys()):
             del self.child[child_node_key]
-            self.child.pop(child_node_key)
+        del self.child
         
     def show(self,index=1):
         print(' '*index,self.name,' ,[',self.this_node_time,'] len:',self.count)

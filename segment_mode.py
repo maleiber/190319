@@ -67,12 +67,15 @@ class multi_dimen_data(object):
     def __sub_by_sum(self,other):
         #subminus by same key, and return value by sum of all submission
         return sum([self.data[k]-other.get_by_attr(k) for k in self.data])
+    def show(self):
+        for k in self.data:
+            print(k,':',self.data[k],' ')
 
 class segment_mode(object):
     """
     data_array:in this time, the data is multidimen data
     """
-    def __init__(self,minl,maxl,data_array,name=''):
+    def __init__(self,minl,maxl,data_array,name='',blurry=True,standardlize=True,up_merge=True):
         self.name=name
         self.min_len=minl
         self.max_len=maxl
@@ -81,10 +84,14 @@ class segment_mode(object):
         self.sub_seq_information=[]
         self.sub_dict={}
         self.color_value=[]
-        
-        self._blurry()
-        self._standardlize()
-        self._bottom_up_merge()
+        if blurry==True:
+            self._blurry()
+        if standardlize==True:
+            self._standardlize()
+        if up_merge==True:
+            self._bottom_up_merge()
+        else:
+            self.data_sign=[x[0]for x in self.dataseq]
         pass
     def _blurry(self):
         
@@ -242,9 +249,13 @@ class segment_mode(object):
         #all segment merge finish,then update data_sign
         new_sign=[self.data_sign[0]]
         #the first value always not changed
+        
+        self.data_sign_match_origin_dict={}
+        i=0
         for now_p,diff in now_segment:
-            
+            self.data_sign_match_origin_dict[i]=now_p
             new_sign.append(self.data_sign[now_p[-1]])
+            i=i+1
             pass
         #take a picture
         a=[x for x in range(len(new_sign))]
@@ -265,7 +276,8 @@ class segment_mode(object):
         #get all sub
         w=self.min_len
         #attention that w =1 ,would not use the min_len
-        w=1
+        #w at least be 1 or it will made error
+        #w=1
         for i in range(len(self.data_sign)):
             start=i
             end=i+w
@@ -476,6 +488,22 @@ class segment_mode(object):
     def build_pattern_of_symbol(self,unique_string):
         #unique string is important to differ this time sequence and other
         pattern_of_symbol=[]
+        '''
+        each index of pattern of symbol:
+        pair[0]:start index in data_sign, and also the clustering center. like 3 (only start index recorded.)
+        pair[1]:next time point of pattern, use a tuple to organized. like (1,2,4,5,3), it have pair[0] but it is in the end
+        pair[2]:the value of clustering center in data_sign
+        pair[3]:start index of clustering center in dataseq(origin data), like[5,6]
+        pair[4]:other point in this cluster in dataseq,    like[[1,2],[3,4],[7,8],[9,10,11]]. sum with pair[3] may not be all seq,
+           and, each point should include at least 1 point in dataseq. the upsize and each size of 1 point is not required the same size 
+        to see how point in data_sign represent in dataseq, see:
+            self.data_sign_match_origin_dict[i of data_sign(1 point)]=[1,2,3,...means point in dataseq]
+            if want to make several point in data_sign, use it repeatly and splice and answer.
+        !!! In pair[0] and pair[1] there are only start index recorded now. if want to avoid time overlap(maybe?maynot?)
+            when get intersection of 2 time duration, you can made pair[0] and pair[1] record start and end time.
+        *** you can also get pair[5] as the value of clustering center in dataseq, but thus it will made each index too large.
+            in fact, with pair[3] and pair [4] it became large already.
+        '''
         start_record=[]
         for pair in self.outer_clu:
             s1,e1=pair[0]
@@ -485,11 +513,31 @@ class segment_mode(object):
             hash_key=tuple(key_array)
             #all_start.append(s1)
             #all start position of this cluster
+            
+            temp_list=[]
+            clu_center_in_dataseq=[]
+            temp_list=[self.data_sign_match_origin_dict[s1]]
+            if s1!=e1:
+                for i in range(s1+1,e1+1):
+                    temp_list.append(self.data_sign_match_origin_dict[i])
+            clu_center_in_dataseq.append(temp_list)
+            #we think s1,e1 is a continues time in data_sign, so will in dataseq, so we shouldn't separate
+            #the time. if it is [1,2,3], it will mean [1,2,3,4,5,6] there, not [[1,2],[3,4],[5,6]].
+            #each the element in pair[1] is like this.
+            point_data_sign_in_dataseq=[]
+            temp_list=[]
+            for s2,e2 in pair[1]:
+                temp_list=[self.data_sign_match_origin_dict[s1]]
+                if s2!=e2:
+                    for i in range(s2+1,e2+1):
+                        temp_list.append(self.data_sign_match_origin_dict[i])
+                point_data_sign_in_dataseq.append(temp_list)
             for start in all_start:
                 if start not in start_record:
-                    pattern_of_symbol.append([start,hash_key])
+                    pattern_of_symbol.append([start,hash_key,pair[2],clu_center_in_dataseq,point_data_sign_in_dataseq])
                     start_record.append(start)
             pass
+        
         for pair in self.inner_clu:
             s1,e1=pair[0]
             all_start=[x[0] for x in pair[1]]
@@ -498,24 +546,45 @@ class segment_mode(object):
             hash_key=tuple(key_array)
             #all_start.append(s1)
             #all start position of this cluster
+            temp_list=[]
+            clu_center_in_dataseq=[]
+            temp_list=[self.data_sign_match_origin_dict[s1]]
+            if s1!=e1:
+                for i in range(s1+1,e1+1):
+                    temp_list.append(self.data_sign_match_origin_dict[i])
+            clu_center_in_dataseq.append(temp_list)
+            #we think s1,e1 is a continues time in data_sign, so will in dataseq, so we shouldn't separate
+            #the time. if it is [1,2,3], it will mean [1,2,3,4,5,6] there, not [[1,2],[3,4],[5,6]].
+            #each the element in pair[1] is like this.
+            point_data_sign_in_dataseq=[]
+            temp_list=[]
+            for s2,e2 in pair[1]:
+                temp_list=[self.data_sign_match_origin_dict[s1]]
+                if s2!=e2:
+                    for i in range(s2+1,e2+1):
+                        temp_list.append(self.data_sign_match_origin_dict[i])
+                point_data_sign_in_dataseq.append(temp_list)
             for start in all_start:    
                 if start not in start_record:
-                    pattern_of_symbol.append([start,hash_key])
+                    pattern_of_symbol.append([start,hash_key,pair[2],clu_center_in_dataseq,point_data_sign_in_dataseq])
                     start_record.append(start)
             
             pass
         pattern_of_symbol=sorted(pattern_of_symbol,key=lambda x:x[0])
         self.pattern_symbol=pattern_of_symbol
+        
         return self.pattern_symbol
         pass
     
-    def density_clu(self,draw=False,inner=1,outlier=8,mark_outlier=True):
+    def density_clu(self,draw=False,inner=8,outlier=1,mark_outlier=True):
         #self.data_rou_theta[i]=[(s1,e1),rou,delta,gamma]
         self.data_rou_theta=sorted(self.data_rou_theta,key=lambda x:x[3],reverse=True)
         clu_center=[]
         #clu_center record inner
         out_center=[]
         #out record outer
+        match_data_sign=[]
+        #data of clustering center
         inner_clu_threshold=inner
         outer_clu_threshold=outlier
         if_partition={}
@@ -530,6 +599,7 @@ class segment_mode(object):
             if pair[3]>=inner_clu_threshold:
                 self.min_delta=min(pair[2],self.min_delta)
                 s1,e1=pair[0]
+                match_data_sign=self.data_sign[s1:e1]
                 s1e1_done=False
                 now_center=(s1,e1)
                 now_clu=[]
@@ -576,7 +646,7 @@ class segment_mode(object):
                             #had been divided
                 #often match at least appearence 2 times
                 if len(now_clu)>1:
-                    clu_center.append([now_center,now_clu])
+                    clu_center.append([now_center,now_clu,match_data_sign])
             else:
                 pass
                 #not in clu_center is outlier
@@ -589,6 +659,7 @@ class segment_mode(object):
             for pair in self.data_rou_theta:
                 if pair[3]<outer_clu_threshold:
                     s1,e1=pair[0]
+                    match_data_sign=self.data_sign[s1:e1]
                     s1e1_done=False
                     now_center=(s1,e1)
                     now_clu=[]
@@ -624,7 +695,7 @@ class segment_mode(object):
                                     if_partition[i]=True
                                 #had been divided
                     if len(now_clu)>1:
-                        out_center.append([now_center,now_clu])
+                        out_center.append([now_center,now_clu,match_data_sign])
                 else:
                     pass
             pass
@@ -778,11 +849,28 @@ def show_rules_in_segment_mode(seg_dict,rule,rulenum,width=20):
         
     pass
 
-def build_data_from_FPTree(FPTree=[]):
+def build_data_from_FPTree(FPTree=[],seq=[]):
     '''
     input:
         FPTree=[tree1,tree2,tree3,...]
+        seq=[dataseq1(class segment_mode, it have dataseq),dataseq2,dataseq3,...]
+    return:
+        ret_value=[point of data association rule1, rule2,...]
+        first,list all the effective rules[like node(clu1)=>node(clu2)] in a tree,
+            then, for each rule, find the value the cluster stands for in segment_mode..
+            next, link all the value by time order in one rule, as one data point
+            push it in ret_value
     '''
+    ret_value=[]
+    for tre in FPTree:
+        for r in tre.effective_rule:
+            temp_list=[]
+            for n in r[0]:
+                #n[0][1:] is ok
+                pos=n[0][1]
+                temp_list=temp_list+tre.pos2value_dict[pos]
+            ret_value.append(temp_list)
+    return ret_value
     pass
 
 if __name__=='__main__':
@@ -833,7 +921,7 @@ if __name__=='__main__':
                     ['co',     'no2',      'so2',      'o3',      'pm10',      'pm25']))
             i=i+1
         
-        co_seg=segment_mode(7,8, multi_dimen_seg,'co')
+        co_seg=segment_mode(1,8, multi_dimen_seg,'co')
         
         #finding best dc
         co_seg.dc_factor=0.013
@@ -841,7 +929,7 @@ if __name__=='__main__':
         best_score=0
         best_dc=0
         best_co_seg=0
-        for i in range(1):
+        '''for i in range(1):
             co_seg.slide_cos_search()
             co_seg.density_clu()
             score=len(co_seg.inner_clu)*co_seg.min_delta**2
@@ -851,9 +939,9 @@ if __name__=='__main__':
                 best_dc=co_seg.dc_factor
             print ('min delta',co_seg.min_delta**2,'now score:',score)
             co_seg.dc_factor=co_seg.dc_factor+step
-            
-        co_seg=best_co_seg    
-        co_seg.dc_factor=best_dc
+        '''    
+        #co_seg=best_co_seg    
+        #co_seg.dc_factor=best_dc
         co_seg.slide_cos_search(True)
         co_seg.density_clu(True)
         co_sequence=co_seg.build_pattern_of_symbol('co')
@@ -871,12 +959,12 @@ if __name__=='__main__':
     seg_dict['co']=co_seg.data_sign
 
     for r in ftree.effective_rule:
-        print (r[0][0],'=>',r[0][1],'believe:',r[1])
+        print (r[0][0],'=>',r[0][1],'lift:',r[1])
         show_rules_in_segment_mode(seg_dict,r,i)
         if i>10:
             break
         i=i+1
-    
+    rule_data=build_data_from_FPTree([ftree])
     pass
     '''
         no2_list=site.no2list

@@ -26,14 +26,16 @@ class FP_tree(object):
     
     
     def add_sequence(self,raw_seq):
-        #raw_seq must like:
-        #    [ [time1,(name1,signal1)],[time2,(name2,signal2)],....]
+        '''
+        raw_seq must like:
+        #    [ [time1,(name1,signal1),...],[time2,(name2,signal2),...],....]
+            the element after pair[1] will not used.
         #signal must be unique!!
         #need to build a FPTree for a time line
         # one time, one sequence
 #        seq_dict={}
 #        tree_name=raw_seq[0][1][0]
-
+        '''
 #        
         self.time_seq_data.append(raw_seq)
         self.cal_seq_num()
@@ -51,6 +53,7 @@ class FP_tree(object):
         #    key  ,  count
         self.pos2key_dict={}
         #    name , key
+        self.pos2value_dict={}
         #first child
         for raw_x_seq in self.time_seq_data:
             name=raw_x_seq[0][1][0]
@@ -60,9 +63,12 @@ class FP_tree(object):
             
             #count time
             for pair in raw_x_seq:
+                
                 all_position=pair[1][1:]
                 self.key2pos_dict[pair[1]]=all_position
                 for pos in all_position:
+                    if self.pos2value_dict.get(pos)==None:
+                        self.pos2value_dict[pos]=pair[2]
                     if self.pos2key_dict.get(pos)==None:
                         now_key=[]
                     else:
@@ -297,6 +303,11 @@ class FP_tree(object):
             print (k[0],'=>',k[1],'lift:',self.rule_dict[k])
         print ('efective rule size:',len(self.effective_rule))
         for r in self.effective_rule:
+            #in r,
+            #r[0][0]left key, r[0][1] is right key
+            #r[0][][0][0]is mark, r[0][][0][1:] is time
+            #r[1] is lift
+            
             print (r[0][0],'=>',r[0][1],'lift:',r[1])
 #        pass
     
@@ -343,6 +354,8 @@ class FP_tree(object):
             
                 
         pass
+    
+    #the pass of class FPTree
     pass
 
 
@@ -371,9 +384,9 @@ if __name__=='__main__':
     #ftree.add_sequence(d)
     ftree.structure_sub_tree()
     ftree.get_associate_rule()
-    ftree.trim_tree(0.1,0.3,2,2)
-    ftree.show_tree()
-    ftree.get_associate_rule()
+    #ftree.trim_tree(0.1,0.3,2,2)
+    #ftree.show_tree()
+    #ftree.get_associate_rule()
 #    for sub_tree in ftree.sub_tree:
 #        for node in traverse_tree(sub_tree):    
 #            print (node.key,'time:',node.this_node_time,',key ',get_key_array(node))
