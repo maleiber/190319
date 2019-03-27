@@ -773,6 +773,96 @@ class segment_mode(object):
         if draw==True and mark_outlier==True:
             draw_pic.draw_pic( y_array,clu_array,x_array,save_name=outputname,title=self.name,text_data=loc_mark,y_is_multi=True)
         pass
+    def read_cluster_of_ARDPC(self,AR_DPC,mark_outlier=True):
+        '''
+        this function is used to ~~~draw~~~!!!
+        '''
+        #time to show
+        y_array=self.data_sign
+        x_array=[x for x in range(len(y_array))]
+        y_pos=max(y_array)
+        key_list=y_pos.get_attr()
+        y_pos=max([y_pos.get_by_attr(k) for k in key_list])
+        y_pos=y_pos + 0.1
+        #print ('inner cluster num:',len(self.inner_clu))
+        #print (self.inner_clu)
+        max_clu=len(AR_DPC.inner_clu)
+        clu_array=[0 for x in x_array]
+        loc_mark=[]
+        nowcolor=0
+        for pair in AR_DPC.inner_clu:
+            color_array=[AR_DPC.rule_node2_time_dict[x] for x in pair[0]]
+            temp_array=[]
+            for i in color_array:
+                if type(i)==list:
+                    temp_array=temp_array+i
+                elif type(i)==tuple:
+                    temp_array=temp_array+list(i)
+                else:
+                    temp_array.append(i)
+            color_array=temp_array
+            print ('color_array:',color_array)
+            #each segment
+            if len(color_array)<2:
+                continue
+            for p in color_array:
+                s1=p
+                #fill (s1,e1)
+                #s1 is x
+                #y_array[s1]+0.1 is y
+                #nowcolor is text
+                loc_mark.append([(s1,y_pos),str(nowcolor)])
+                #print (s1)
+                for i in range(s1,s1+1):
+                    clu_array[i]=nowcolor
+            #for next time color changed
+            nowcolor=nowcolor+1
+        clu_array=[nowcolor*2 if x==max_clu else x for x in clu_array]
+        outputname='AR_DPC_frequent_sequence_'
+        outputname=outputname+AR_DPC.name
+        draw_pic.draw_pic( y_array,clu_array,x_array,save_name=outputname,title=self.name,text_data=loc_mark,y_is_multi=True)
+        
+        
+        #print ('outter cluster num:',len(self.outer_clu))
+        #print (self.outer_clu)
+        max_clu=len(AR_DPC.outer_clu)
+        clu_array=[max_clu for x in x_array]
+        loc_mark=[]
+        nowcolor=0
+        y_pos=max(y_array)
+        key_list=y_pos.get_attr()
+        y_pos=max([y_pos.get_by_attr(k) for k in key_list])
+        y_pos=y_pos + 0.1
+        for pair in AR_DPC.outer_clu:
+            color_array=[AR_DPC.rule_node2_time_dict[x]for x in pair[0]]
+            temp_array=[]
+            for i in color_array:
+                if type(i)==list:
+                    temp_array=temp_array+i
+                elif type(i)==tuple:
+                    temp_array=temp_array+list(i)
+                else:
+                    temp_array.append(i)
+            color_array=temp_array
+            #each segment
+            if len(color_array)<2:
+                continue
+            for p in color_array:
+                s1=p
+                #fill (s1,e1)
+                loc_mark.append([(s1,y_pos),str(nowcolor)])
+                for i in range(s1,s1+1):
+                    clu_array[i]=nowcolor
+            #for next time color changed
+            nowcolor=nowcolor+1
+        clu_array=[nowcolor*2 if x==max_clu else x for x in clu_array]
+        outputname='AR_DPC_rare_sequence_'
+        outputname=outputname+AR_DPC.name
+        if mark_outlier==True:
+            draw_pic.draw_pic( y_array,clu_array,x_array,save_name=outputname,title=self.name,text_data=loc_mark,y_is_multi=True)
+        
+        pass
+    #here the pass of whole class
     pass
 
 def show_rules_in_segment_mode(seg_dict,rule,rulenum,width=10):
@@ -975,7 +1065,9 @@ if __name__=='__main__':
     global_cluster_result=AR_DPC.AR_DPC(rule_data)
     global_cluster_result.cos_search(True)
     global_cluster_result.density_clu(True)
+    co_seg.read_cluster_of_ARDPC(global_cluster_result)
     global_CR_seq=global_cluster_result.build_pattern_of_symbol('global')
+    
     pass
     '''
         no2_list=site.no2list

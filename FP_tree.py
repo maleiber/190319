@@ -20,6 +20,14 @@ class FP_tree(object):
         self.time_seq_data=[]
         self.sum_seq_num=0
         self.y_array={}
+        self.sub_tree=[]
+        self.key2pos_dict={}
+        #    key  ,  all position
+        self.count_dict={}
+        #    key  ,  count
+        self.pos2key_dict={}
+        #    name , key
+        self.pos2value_dict={}
         pass
     def add_y_array(self,name,y_array):
         self.y_array[name]=y_array
@@ -46,14 +54,7 @@ class FP_tree(object):
         pass
     
     def init_sub_tree(self):
-        self.sub_tree=[]
-        self.key2pos_dict={}
-        #    key  ,  all position
-        self.count_dict={}
-        #    key  ,  count
-        self.pos2key_dict={}
-        #    name , key
-        self.pos2value_dict={}
+        
         #first child
         for raw_x_seq in self.time_seq_data:
             name=raw_x_seq[0][1][0]
@@ -66,6 +67,7 @@ class FP_tree(object):
                 
                 all_position=pair[1][1:]
                 self.key2pos_dict[pair[1]]=all_position
+                #but there are only start time point
                 for pos in all_position:
                     if self.pos2value_dict.get(pos)==None:
                         self.pos2value_dict[pos]=pair[2]

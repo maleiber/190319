@@ -14,8 +14,9 @@ class AR_DPC(object):
         not [[1,2],[3,4]]
     """
     def __init__(self,rules=[],name=''):
-    
-        self.rules=self.get_regular_rules([x[0] for x in rules])
+        
+        self.rule_node2_time_dict={}
+        self.rules=self.get_regular_rules(rules)
         self.dc_factor=0.01
         self.sub_dict={}
         self.name=name
@@ -27,11 +28,20 @@ class AR_DPC(object):
         ret_val=[]
         for r in rules:
             temp_r=[]
-            for i in r:
-                if type(i)==list or type(i)==tuple:
-                    temp_r=temp_r+self.get_samplest_list(i)
-                else:
-                    temp_r.append(i)
+            rule_node=r[0]
+            rule_time=r[1]
+            i=0
+            
+            for rule_node,rule_time in zip(r[0],r[1]):
+#                if type(i)==list or type(i)==tuple:
+#                    temp_r=temp_r+self.get_samplest_list(i)
+#                else:
+#                    temp_r.append(i)
+                self.rule_node2_time_dict[rule_node]=rule_time
+                temp_r.append(rule_node)
+                #!!!it seems that if you want to add time, you can't get the samplest list
+            
+                
             ret_val.append(temp_r)
         return ret_val
     
@@ -171,13 +181,13 @@ class AR_DPC(object):
                 seg1=pair[0]
                 #match_data_sign=self.data_sign[s1:e1]
                 s1e1_done=False
-                now_center=(seg1)
+                now_center=seg1
                 now_clu=[]
                 #judge all have distance with center
                 if self.sub_cos.get(seg1)==None:
                     seg1_dict={}
                 else:
-                    seg1_dict=self.sub_cos.get(seg1)
+                    seg1_dict=self.sub_cos.get((seg1))
 #                for i in range(s1,e1):   
 #                    if i in if_partition and if_partition[i]==True:
 #                        #has been divide
@@ -233,13 +243,13 @@ class AR_DPC(object):
                     seg1=pair[0]
                     #match_data_sign=self.data_sign[s1:e1]
                     #s1e1_done=False
-                    now_center=(seg1)
+                    now_center=seg1
                     now_clu=[]
                     #judge all have distance with center
                     if self.sub_cos.get(seg1)==None:
                         seg1_dict={}
                     else:
-                        seg1_dict=self.sub_cos.get(seg1)
+                        seg1_dict=self.sub_cos.get((seg1))
 #                    for i in range(s1,e1):   
 #                        if i in if_partition and if_partition[i]==True:
 #                            #has been divide
@@ -507,5 +517,6 @@ class AR_DPC(object):
     pass
 
 if __name__=='__main__':
-    a=AR_DPC([[1,2,[3,[4]]],[[5,6],[7,[8,9]],10]])
+    #a=AR_DPC([[1,2,[3,[4]]],[[5,6],[7,[8,9]],10]])
+    #this testing is no longer availavle
     print (a.rules)
