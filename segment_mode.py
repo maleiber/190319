@@ -9,11 +9,12 @@ from FP_tree import *
 
 import draw_pic
 import data_builder
+import AR_DPC
 import math
 import random
 import sys
 import time
-sys.path.append("D:/zhp_workspace.180125")
+sys.path.append("D:/zhp_workspace.190312")
 from main import *
 
 class multi_dimen_data(object):
@@ -774,7 +775,7 @@ class segment_mode(object):
         pass
     pass
 
-def show_rules_in_segment_mode(seg_dict,rule,rulenum,width=20):
+def show_rules_in_segment_mode(seg_dict,rule,rulenum,width=10):
     #seg array:
     #{name:y_array},...
     #one time one rule
@@ -860,16 +861,22 @@ def build_data_from_FPTree(FPTree=[],seq=[]):
             then, for each rule, find the value the cluster stands for in segment_mode..
             next, link all the value by time order in one rule, as one data point
             push it in ret_value
+        in each rule should contain its start time and end time
+        for each rule,
+            pair[0] is value(multi-dimensions) of the rule,
+            pair[1][..] is start time of node this rule order.
     '''
     ret_value=[]
     for tre in FPTree:
         for r in tre.effective_rule:
             temp_list=[]
+            start_pos_array=[]
             for n in r[0]:
                 #n[0][1:] is ok
                 pos=n[0][1]
                 temp_list=temp_list+tre.pos2value_dict[pos]
-            ret_value.append(temp_list)
+                start_pos_array.append(n[0][1:])
+            ret_value.append((temp_list,start_pos_array))
     return ret_value
     pass
 
@@ -960,11 +967,15 @@ if __name__=='__main__':
 
     for r in ftree.effective_rule:
         print (r[0][0],'=>',r[0][1],'lift:',r[1])
-        show_rules_in_segment_mode(seg_dict,r,i)
+        #show_rules_in_segment_mode(seg_dict,r,i)
         if i>10:
             break
         i=i+1
     rule_data=build_data_from_FPTree([ftree])
+    global_cluster_result=AR_DPC.AR_DPC(rule_data)
+    global_cluster_result.cos_search(True)
+    global_cluster_result.density_clu(True)
+    global_CR_seq=global_cluster_result.build_pattern_of_symbol('global')
     pass
     '''
         no2_list=site.no2list
