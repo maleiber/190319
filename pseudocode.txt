@@ -1,0 +1,121 @@
+Algorithm1 LDPC
+#it is typical DPC
+----------------------
+input:	D:dataset with n data points and each of the point have k dimensions. D(n,k)
+	d_k:the percentage mark will decide cut-off distance and number of clustering center
+	threshold: to value a point can be a cluster
+output: C: is cluster_list, each of its elements is a cluster, including its point.
+#caution that D have already done preprocessing.
+step1: Calculate the distance between each of 2 point in D.
+dictionary_of_2_point={}
+#it record distance of all points, use any 2 different point to qu=inquiry distance
+for point_i in D do
+	for point_j in D do
+		#avoid i and j same
+		if point_i is not point_j then
+			distance=similarity(point_i,point_j)
+			add key(point_i,point_j) and value (distance) to dictionary_of_2_point
+
+step2: get cut-off distance by all of the distance and give percentage mark.
+distance_list=get all value of dictionary_of_2_point as list
+#sort(distance_list,ascending)
+sort the distance_list by ascending order
+#d_k_position=int(size(distance_list)*d_k)
+let d_k_position as multiply of the number of all  distance and the d_k percentage
+#cutoff_d=distance_list[d_k_position]
+set cut-off_distance as the value in distance_list which position is d_k_position
+
+step3: calculate ¦Ñand ¦Ä in DPC
+rou_delta_list=[]
+for point in D do
+	Calculate density of each point in D as rou_list, mark with(density,point)
+sort the rou_list by its value density by ascending order
+for point in D do
+#by ascending order take every point in rou_list do
+	if now point is the last point then
+		Delta is the max in Delta_list
+	else
+		find the min distance between now point and the point in behind as Delta
+	add value(point,density,delta) to rou_delta_list
+	add delta to delta_list
+step4: assign the cluster
+cluster_list=[]
+for point_i in rou_delta_list do
+	if point_i past the threshold then
+		mark point_i has been divided
+		mark point_i as new cluster center c
+		for point_j in D do
+			if point j has been divided then
+				continue
+			if distance between point_i and point_j less than cut-off_distance then
+				add point j to cluster center c
+		add c to cluster_list
+output cluster_list as C
+
+Algorithm2 FPTREE-AR
+#FPTREE method design for time data get AR
+input:	C:a set of cluster
+	W:width of time window between rule node
+	support:parameter be condition forming new node
+	confidence:parameter be condition forming new node
+	lift:parameter be condition forming new node
+	max_depth:max depth of a tree
+outputs:	R:list of effective rules in C
+step1:	add first child of the tree
+
+step2:	expand and trim tree node
+
+step3:	get association rules from tree
+
+Algorithm3 GDPC
+#uses AR made by LDPC and FPTREE-AR a global DPC
+#what's different with GDPC and LDPC?
+input:	R: all the association rules in local
+	d_k: defination like LDPC
+	threshold: defination like LDPC
+output: C: a set of clusters represent all cluster in data
+step1:	Calculate the distance between each of 2 rules in R.
+step2:	get cut-off distance 
+step3:	calculate ¦Ñand ¦Ä
+step4:	assign the cluster
+
+Algorithm4 ARDPC
+input:	D: all the data with size n and dimension k
+	d_k: defination like LDPC, LDPC and GDPC can use different value
+	threshold: defination like LDPC, LDPC and GDPC can use different value
+	W:width of time window between rule node
+	support:parameter be condition forming new node
+	confidence:parameter be condition forming new node
+	lift:parameter be condition forming new node
+	max_depth:max depth of a tree
+output: C: all clusters in data
+step1: preprocessing 
+step2: and divide data into many datablocks.
+
+step2: Local clustering
+cluster_list=[]
+for dataset in data do
+	result=LDPC(dataset,d_k,threshold)
+	cluster_list.push(result)
+
+step3: get Local association rules
+merge the sets in cluster_list into several AR_block to gets association rules.
+AR_block=AR_merge(cluster_list)
+Local_AR=[]
+for AR_set in AR_block do
+	result=FPTREE-AR(AR_set,width,support,confidence,lift,max_depth)
+Local_AR.push(result)
+step4: get global clusters
+creating data from association rules, each rule is a datapoint
+g_sets=[]
+for rule in Local_AR do
+	if g_sets.exist(rule) then
+		g_sets.update(rule)
+	else
+		g_sets.add(rule)
+if sizeof Local_AR too large then 
+	
+C=GDPC(Local_AR,d_k,threshlod)
+return C
+
+

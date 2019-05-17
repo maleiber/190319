@@ -8,7 +8,7 @@ from FP_tree_Node import *
 
 class FP_tree(object):
     #optimized for timing sequence
-    def __init__(self,support=0.1,in_built_confidence=0.3,lift=1,window_width=12,max_depth=10):
+    def __init__(self,support=0.1,in_built_confidence=0.3,lift=1,window_width=12,max_depth=4):
         self.support=support
         #support is min time a signnal appear.
         #    if less than it, the node will be prune after builing a tree
@@ -257,10 +257,11 @@ class FP_tree(object):
             pass
 
         print ('finished struct')
+        '''
         for now_parent_node in self.sub_tree:  
             now_parent_node.show()
         pass
-
+        '''
         
     def show_tree(self):
         for now_parent_node in self.sub_tree:  
@@ -300,9 +301,13 @@ class FP_tree(object):
         
         self.effective_rule=[i for i in self.rule_list if i[1]>=self.lift]
         print ('all rule size:',len(self.rule_dict))
-        
+        i=0
         for k in self.rule_dict:
             print (k[0],'=>',k[1],'lift:',self.rule_dict[k])
+            i=i+1
+            if i>100:
+                break
+        i=0
         print ('efective rule size:',len(self.effective_rule))
         for r in self.effective_rule:
             #in r,
@@ -311,6 +316,9 @@ class FP_tree(object):
             #r[1] is lift
             
             print (r[0][0],'=>',r[0][1],'lift:',r[1])
+            i=i+1
+            if i>10:
+                break
 #        pass
     
     def trim_tree(self,goal_support=0.1,goal_confidence=0.3,goal_lift=1,max_depth=10):

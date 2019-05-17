@@ -175,8 +175,15 @@ class AR_DPC(object):
         #max_e=len(if_partition)-1
         #record inner
         self.min_delta=999
+        x_array=[x[1] for x in self.data_rou_theta]
+        x_array=sorted(x_array)
+        rou_thresold_1=x_array[int(len(x_array)*0.6)]
+        rou_thresold_2=x_array[int(len(x_array)*0.4)]
+        y_array=[x[2] for x in self.data_rou_theta]
+        y_array=sorted(y_array)
+        delta_threshlod=y_array[int(len(y_array)*0.8)]
         for pair in self.data_rou_theta:
-            if pair[3]>=inner_clu_threshold:
+            if pair[1]>=rou_thresold_1 and pair[2]>=delta_threshlod:
                 self.min_delta=min(pair[2],self.min_delta)
                 seg1=pair[0]
                 #match_data_sign=self.data_sign[s1:e1]
@@ -239,7 +246,7 @@ class AR_DPC(object):
         if mark_outlier==True:
             #recode outer
             for pair in self.data_rou_theta:
-                if pair[3]<outer_clu_threshold:
+                if pair[1]<rou_thresold_2 and pair[2]>=delta_threshlod:
                     seg1=pair[0]
                     #match_data_sign=self.data_sign[s1:e1]
                     #s1e1_done=False

@@ -92,7 +92,11 @@ class segment_mode(object):
         if up_merge==True:
             self._bottom_up_merge()
         else:
-            self.data_sign=[x[0]for x in self.dataseq]
+            self.__build_origin_segment()
+            self.data_sign_match_origin_dict={}
+            i=0
+            for i in range(len(self.data_sign)):
+                self.data_sign_match_origin_dict[i]=[i]
         pass
     def _blurry(self):
         
@@ -428,7 +432,8 @@ class segment_mode(object):
         for k1 in self.sub_cos:
             sub_dict=self.sub_cos[k1]
             for k2 in sub_dict:
-                value_seq.append(sub_dict[k2])
+                if sub_dict[k2]!=0:
+                    value_seq.append(sub_dict[k2])
         t=self.dc_factor*len(value_seq)
         t=round(t)
         t=max(t,1)
@@ -596,8 +601,17 @@ class segment_mode(object):
         #max_e=len(if_partition)-1
         #record inner
         self.min_delta=999
+        x_array=[x[1] for x in self.data_rou_theta]
+        x_array=sorted(x_array)
+        rou_thresold_1=x_array[int(len(x_array)*0.6)]
+        rou_thresold_2=x_array[int(len(x_array)*0.4)]
+        y_array=[x[2] for x in self.data_rou_theta]
+        y_array=sorted(y_array)
+        delta_threshlod=y_array[int(len(y_array)*0.8)]
+        #print (rou_thresold_1,rou_thresold_2,delta_threshlod)
+        #print (self.dc)
         for pair in self.data_rou_theta:
-            if pair[3]>=inner_clu_threshold:
+            if pair[1]>=rou_thresold_1 and pair[2]>=delta_threshlod:
                 self.min_delta=min(pair[2],self.min_delta)
                 s1,e1=pair[0]
                 match_data_sign=self.data_sign[s1:e1]
@@ -658,7 +672,7 @@ class segment_mode(object):
         if mark_outlier==True:
             #recode outer
             for pair in self.data_rou_theta:
-                if pair[3]<outer_clu_threshold:
+                if pair[1]<rou_thresold_2 and pair[2]>=delta_threshlod:
                     s1,e1=pair[0]
                     match_data_sign=self.data_sign[s1:e1]
                     s1e1_done=False
@@ -998,11 +1012,15 @@ if __name__=='__main__':
 #    B_sequence=B_seg.build_pattern_of_symbol('b')
     start=time.time()
     sitelist=[]
+    ftree=FP_tree(0.005,0.3,4,8)
     for file in diskwalk("D:/zhp_workspace/35site").paths():
         print(start,file)
         filename=file
-        sitelist.append(timeseq(filename))
-    for site in sitelist:
+        
+        site=timeseq(filename)
+        filename=filename[len(filename)-10:]
+        sitelist.append(site)
+    #for site in sitelist:
         co_list=site.colist
         no2_list=site.no2list
         so2_list=site.so2list
@@ -1018,7 +1036,7 @@ if __name__=='__main__':
                     ['co',     'no2',      'so2',      'o3',      'pm10',      'pm25']))
             i=i+1
         
-        co_seg=segment_mode(1,8, multi_dimen_seg,'co')
+        co_seg=segment_mode(1,2, multi_dimen_seg,filename)
         
         #finding best dc
         co_seg.dc_factor=0.013
@@ -1041,33 +1059,40 @@ if __name__=='__main__':
         #co_seg.dc_factor=best_dc
         co_seg.slide_cos_search(True)
         co_seg.density_clu(True)
-        co_sequence=co_seg.build_pattern_of_symbol('co')
+        co_sequence=co_seg.build_pattern_of_symbol(filename)
+        ftree.add_sequence(co_sequence)
+        print (time.time(),'interval:',time.time()-start)
+        
 #        print (co_sequence)
     print (time.time(),'interval:',time.time()-start)
     
     
-    ftree=FP_tree(0.01,0.3,2,8)
-    ftree.add_sequence(co_sequence)
+    #ftree=FP_tree(0.001,0.3,2,8)
+    #ftree.add_sequence(co_sequence)
     ftree.structure_sub_tree()
     ftree.get_associate_rule()
     #print 2 pic
     i=0
     seg_dict={}
     seg_dict['co']=co_seg.data_sign
-
+    print ('er:',len(ftree.effective_rule))
+    #input()
     for r in ftree.effective_rule:
         print (r[0][0],'=>',r[0][1],'lift:',r[1])
         #show_rules_in_segment_mode(seg_dict,r,i)
         if i>10:
             break
         i=i+1
+    
     rule_data=build_data_from_FPTree([ftree])
+    print ('all rd:',len(rule_data))
+    #input()
     global_cluster_result=AR_DPC.AR_DPC(rule_data)
     global_cluster_result.cos_search(True)
     global_cluster_result.density_clu(True)
     co_seg.read_cluster_of_ARDPC(global_cluster_result)
-    global_CR_seq=global_cluster_result.build_pattern_of_symbol('global')
-    
+    #global_CR_seq=global_cluster_result.build_pattern_of_symbol('global')
+    print (time.time(),'interval:',time.time()-start)
     pass
     '''
         no2_list=site.no2list

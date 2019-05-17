@@ -12,7 +12,8 @@ def Z_ScoreNormalization(x):
     sigma=numpy.std(x)
     #x = (x - mu) / sigma;  
     x=[t-mu for t in x]
-    x=[t/sigma for t in x]
+    if sigma!=0:    
+        x=[t/sigma for t in x]
     
     return x;  
 #cos compares the differences between 2 point
